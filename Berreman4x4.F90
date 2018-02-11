@@ -6,20 +6,19 @@ Program Berreman4x4
   Double Precision, Parameter :: Pi=3.141592653589793D0, eta0=376.98_8
   Complex*16, Parameter ::  I=(0.0D0,1.0D0)
   Double Precision, parameter :: theta=0.0D0, ng=1.5D0 
-  Double Precision :: lz, alpha=0.0D0, beta=0D0
+  Double Precision :: lz, alpha=0.0D0
   Double Precision :: eperpa,epara
   Double Precision :: no=1.52D0, ne=1.78D0
   Double Precision :: n_ito
   Double Precision :: lamb, lamb_i,lamb_f,dlamb
-  Double Precision :: kx, k0, Xi, ky
+  Double Precision :: kx, k0, Xi
   Double Precision :: n(3) ,p0,q0,RWORK(8)
   integer :: ii,jj,IPIV(4),INFO,Nz, tt
-  Complex*16, dimension(4,4)  :: Bij, Aij,Pij, CH_matrix
+  Complex*16, dimension(4,4)  :: Bij, Aij,Qij,Pij, CH_matrix
   Complex*16, dimension(4,4)  :: Atij, Arij, Iij
+  Complex*16, dimension(4)    :: q_i
   Complex*16, dimension(4,1)  :: gamma_i, psi_i, psi_tr
   Complex*16, dimension(2)    :: E_i
-  Double Precision, dimension(4)   :: q_i
-  Double Precision, dimension(4,4) :: Qij
   Complex*16 :: WORK(12),Vl(4,4),Vr(4,4)
   Double Precision,Dimension(3,3) :: eij
   Double Precision :: deltaE,dz,dz_ito, dz_polimide
@@ -33,7 +32,6 @@ Program Berreman4x4
   Allocate( phi(Nz) )
   
   alpha=alpha*Pi/180.0D0
-  beta=beta*Pi/180.0D0
   
   lamb_i=0.3D0
   lamb_f=0.7D0
@@ -45,7 +43,7 @@ Program Berreman4x4
   !dlamb=0.5D0
 
   
-  p0=0.338D0
+  !p0=0.338D0/2.0D0
   Nz=5000
   lz=50.7D0
   q0=2*Pi/p0
@@ -94,10 +92,10 @@ Program Berreman4x4
 
 
   
-  time_DO: Do tt=1,1
+  time_DO: Do tt=1,2001
 
      lamb=lamb_i
-     !call read_next_snapshot(phi,Nz)     
+     call read_next_snapshot(phi,Nz)     
      
      omega_DO : Do while(lamb .le. lamb_f)
 
@@ -106,8 +104,8 @@ Program Berreman4x4
 
         !Initiating electrical parameters:        
         k0=2.0D0*Pi/lamb
-        kx=1.5D0*dsin( alpha )*dcos( beta )
-        ky=1.5D0*dsin( alpha )*dsin( beta )
+        kx=k0*dsin( alpha )
+        
 
         
         !Filing the ito Berreman matrix:
@@ -126,12 +124,12 @@ Program Berreman4x4
         lc: Do jj=1,Nz
            !Filling Berreman matrix Qij (dont confuse with the Lc order parameter):
            
-           !n(1)=cos(theta)*cos(phi(jj))
-           !n(2)=cos(theta)*sin(phi(jj))
-           !n(3)=sin( theta )
-           n(3)=0.0D0
-           n(1)=dcos( q0*dz*(jj-1) )
-           n(2)=dsin( q0*dz*(jj-1) )
+           n(1)=cos(theta)*cos(phi(jj))
+           n(2)=cos(theta)*sin(phi(jj))
+           n(3)=sin( theta )
+           !n(3)=0.0D0
+           !n(1)=dcos( q0*dz*(jj-1) )
+           !n(2)=dsin( q0*dz*(jj-1) )
 
            eij(1,1)=eperpa+deltaE*n(1)**2
            eij(1,2)=deltaE*n(1)*n(2)
@@ -147,25 +145,25 @@ Program Berreman4x4
 
 
            
-           Qij(1,1)= -kx*eij(3,1)/eij(3,3)
-           Qij(1,2)= 1D0-kx**2/eij(3,3)
-           Qij(1,3)= -kx*eij(3,2)/eij(3,3) 
-           Qij(1,4)= -kx*ky/eij(3,3)
+           Qij(1,1)= -Xi*eij(3,1)/eij(3,3)
+           Qij(1,2)=  -Xi**2/eij(3,3)+1D0           
+           Qij(1,3)= -Xi*eij(3,2)/eij(3,3) 
+           Qij(1,4)= (0.0D0,0.0D0 )
 
-           Qij(2,1)=eij(1,1)-eij(1,3)*eij(3,1)/eij(3,3)-ky*ky
-           Qij(2,2)=Qij(1,1)
-           Qij(2,3)=eij(1,2)+kx*ky-eij(1,3)*eij(3,2)/eij(3,3)
-           Qij(2,4)=-ky*eij(1,3)/eij(3,3)
+           Qij(2,1)=-eij(1,3)*eij(3,1)/eij(3,3) +eij(1,1)
+           Qij(2,2)=-Xi*eij(1,3)/eij(3,3)
+           Qij(2,3)=-eij(1,3)*eij(3,2)/eij(3,3)+eij(1,2)
+           Qij(2,4)=(0.0D0,0.0D0)
 
-           Qij(3,1)=-ky*eij(1,3)/eij(3,3)
-           Qij(3,2)=-kx*ky/eij(3,3)
-           Qij(3,3)=-ky*eij(2,3)/eij(3,3)
-           Qij(3,4)=1D0-kx*ky/eij(3,3)
+           Qij(3,1)=(0.0D0,0.0D0)
+           Qij(3,2)=(0.0D0,0.0D0)
+           Qij(3,3)=(0.0D0,0.0D0)
+           Qij(3,4)=(1D0,0D0)
 
-           Qij(4,1)=Qij(2,3)
-           Qij(4,2)=Qij(1,3)
-           Qij(4,3)=eij(2,2)-kx**2-eij(2,3)*eij(3,2)/eij(3,3)
-           Qij(4,4)=-ky*eij(2,3)/eij(3,3)
+           Qij(4,1)=-eij(2,3)*eij(3,1)/eij(3,3)+eij(2,1)
+           Qij(4,2)=-Xi*eij(2,3)/eij(3,3)
+           Qij(4,3)=-Xi**2-eij(2,3)*eij(3,2)/eij(3,3)+eij(2,2)
+           Qij(4,4)=(0.0D0,0.0D0)
 
            !Calculating the Berraman matrix eigenvalues:           
 
