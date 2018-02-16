@@ -13,8 +13,8 @@ Program Berreman4x4
   Double Precision :: lamb, lamb_i,lamb_f,dlamb
   Double Precision :: kx, k0, Xi
   Double Precision :: n(3) ,p0,q0,RWORK(8)
-  integer :: ii,jj,IPIV(4),INFO,Nz, tt
-  Complex*16, dimension(4,4)  :: Bij, Aij,Qij,Pij, CH_matrix
+  integer :: ii,jj,kk,IPIV(4),INFO,Nz, tt,LWORK=16
+  Complex*16, dimension(4,4)  :: Bij, Aij,Qij,Pij, CH_matrix, q_diag_matrix=(0.D0,0D0)
   Complex*16, dimension(4,4)  :: Atij, Arij, Iij
   Complex*16, dimension(4)    :: q_i
   Complex*16, dimension(4,1)  :: gamma_i, psi_i, psi_tr
@@ -37,20 +37,15 @@ Program Berreman4x4
   lamb_f=0.7D0
   dlamb=0.001D0
 
-
-  !lamb_i=0.52D0
-  !lamb_f=0.700D0
-  !dlamb=0.5D0
-
   
-  !p0=0.338D0/2.0D0
+  p0=0.208D0
   Nz=5000
   lz=50.7D0
   q0=2*Pi/p0
 
 
-  dz_polimide=0.98
-  dz_ito=0.025
+  !dz_polimide=0.98
+  !dz_ito=0.025
   dz=lz/(Nz)
   E_i(1)=(1.0D0,0.0D0)
   E_i(2)=(0.0D0,0.0D0)
@@ -58,7 +53,6 @@ Program Berreman4x4
 
   incidence=Real( E_i(1)*conjg(E_i(1))/(cos(alpha)**2)+E_i(2)*conjg(E_i(2)) ) 
 
-  !print*, incidence
 
   eperpa=no**2
   epara=ne**2
@@ -92,10 +86,10 @@ Program Berreman4x4
 
 
   
-  time_DO: Do tt=1,2001
+  time_DO: Do tt=1,1
 
      lamb=lamb_i
-     call read_next_snapshot(phi,Nz)     
+     !call read_next_snapshot(phi,Nz)     
      
      omega_DO : Do while(lamb .le. lamb_f)
 
@@ -124,13 +118,14 @@ Program Berreman4x4
         lc: Do jj=1,Nz
            !Filling Berreman matrix Qij (dont confuse with the Lc order parameter):
            
-           n(1)=cos(theta)*cos(phi(jj))
-           n(2)=cos(theta)*sin(phi(jj))
-           n(3)=sin( theta )
-           !n(3)=0.0D0
-           !n(1)=dcos( q0*dz*(jj-1) )
-           !n(2)=dsin( q0*dz*(jj-1) )
-
+           !n(1)=cos(theta)*cos(phi(jj))
+           !n(2)=cos(theta)*sin(phi(jj))
+           !n(3)=sin( theta )
+           
+           n(1)=dcos( q0*dz*(jj-1) )
+           n(2)=dsin( q0*dz*(jj-1) )
+           n(3)=0.0D0
+           
            eij(1,1)=eperpa+deltaE*n(1)**2
            eij(1,2)=deltaE*n(1)*n(2)
            eij(1,3)=deltaE*n(1)*n(3)
@@ -165,95 +160,45 @@ Program Berreman4x4
            Qij(4,3)=-Xi**2-eij(2,3)*eij(3,2)/eij(3,3)+eij(2,2)
            Qij(4,4)=(0.0D0,0.0D0)
 
-           !Calculating the Berraman matrix eigenvalues:           
-
-           !Aij=Qij
-           !call zgeev('N','N',4,Aij,4,q_i,VL,4,VR,4,WORk,12,RWORK,INFO)
-           !if( INFO .ne. 0) then
-           !
-           !
-           !   print*,  "info=",INFO, "Nz=",Nz," lamb=",lamb
-           !   stop
-           !
-           !end if
-                       
-           q_i(1)= sqrt(eperpa-Xi**2)
-           q_i(2)=-sqrt(eperpa-Xi**2)
-
-           q_i(3)=(-Xi*deltaE*n(1)*n(3) + sqrt(eperpa*epara)*sqrt(  (eperpa+deltaE*n(3)**2)-Xi**2*( 1.0_8-deltaE*n(2)**2/epara )  ))/(eperpa+deltaE*n(3)**2)
-           q_i(4)=(-Xi*deltaE*n(1)*n(3) - sqrt(eperpa*epara)*sqrt(  (eperpa+deltaE*n(3)**2)-Xi**2*( 1.0_8-deltaE*n(2)**2/epara )  ))/(eperpa+deltaE*n(3)**2)
-           !q_i(3)=Qij(1,1) + sqrt( Qij(1,2)*Qij(2,1)+Qij(1,3)*Qij(2,3)/Qij(1,1) )
-           !q_i(4)=Qij(1,1) - sqrt( Qij(1,2)*Qij(2,1)+Qij(1,3)*Qij(2,3)/Qij(1,1) )
+           !Calculating the Berraman matrix eigenvalues and eigenvectors:           
            
-
-           
-           !Writing the sistem of equations for the Caley-Hamilton parameters:
-           Do ii=1,4
-
-              CH_matrix(ii,1)=  ( 1.0D0,0.0D0 )
-              CH_matrix(ii,2)=  ( -I*k0*dz*q_i(ii) )
-              CH_matrix(ii,3)=  ( -I*k0*dz*q_i(ii) )**2
-              CH_matrix(ii,4)=  ( -I*k0*dz*q_i(ii) )**3
-              gamma_i(ii,1)=cos(dz*k0*q_i(ii) )-I*sin( dz*k0*q_i(ii) )
-
-           end Do
-
-           !print*, gamma_i
-           !print*, "   "
-           
-           
-           call ZGESV( 4, 1, CH_matrix, 4, IPIV, gamma_i, 4, INFO )
-
-           
-
-
+           call zgeev('V','V',4,Qij,4,q_i,VL,4,VR,4,WORk,LWORK,RWORK,INFO)
            if( INFO .ne. 0) then
-
-
-              print*, "info=",INFO, "Nz=",Nz, "deu ruim!!!"
+           
+           
+              print*,  "convergence failure at Nz=", Nz,"info=",INFO, "lamb=",lamb 
               stop
-
+           
            end if
            
+           Vl=transpose(Vl)
+           
+           call normalize_left_and_right_eigenvectors(Vl,VR,4,1)
+
+           q_diag_matrix=(0D0,0D0)
+           forall(kk=1:4) q_diag_matrix(kk,kk)=zexp(-dz*k0*q_i(kk)*I)
+           
+           
               
-           Pij=gamma_i(1,1)*Iij + gamma_i(2,1)*( -I*dz*k0 )*Qij + gamma_i(3,1)*( ( -I*dz*k0 )**2)*matmul(Qij,Qij) &
-                & +gamma_i(4,1)*( ( -I*dz*k0 )**3)*matmul(Qij,matmul(Qij,Qij))
+           Pij=matmul( VR , matmul(q_diag_matrix,Vl) )
 
           
 
            
            Bij=matmul(Pij,Bij)
 
-           !print*, "jj=", jj
-           !print*, Bij
-           !print*, " "
-           !print*, " "
            
         end Do lc
 
-        !Filling the polimide Berreman matrix:
-        !call Fill_isotropic_berreman_matrix(Pij,np,kz,dz_polimide,k0)
-        !Bij=matmul(Pij,Bij)
-
-
-
-        !Filing the ito Berreman matrix:
-        !n_ito=2.525-1.271*lamb
-        !call Fill_isotropic_berreman_matrix(Pij,n_ito,kz,dz_ito,k0)
-        !Bij=matmul(Pij,Bij)
 
 
         Aij=Atij-matmul(Bij,Arij)
         psi_tr=matmul(Bij,psi_i)
 
-
-
-        !Abij=Atij+matmul(Bij,Arij)
-        !call matinv4(Abij,Abinv_ij)
+        
 
         call ZGESV( 4, 1, Aij, 4, IPIV, psi_tr, 4, INFO )
-
-        if( INFO .ne. 0) print*, "info=",INFO, "lamb=" ,lamb , "deu ruim!!!"
+        if( INFO .ne. 0) print*, "info=",INFO, "lamb=" ,lamb , "deu ruim (berreman vector)!!!"
         
         transmitance=Real( psi_tr(1,1)*conjg(psi_tr(1,1))/(cos(alpha)**2)+psi_tr(2,1)*conjg(psi_tr(2,1)) )/incidence
         reflectance=Real( psi_tr(3,1)*conjg(psi_tr(3,1))/(cos(alpha)**2)+psi_tr(4,1)*conjg(psi_tr(4,1)) )/incidence
@@ -275,8 +220,40 @@ Program Berreman4x4
   call Close_data_files()
 
 
-!contains
+contains
 
+  Subroutine normalize_left_and_right_eigenvectors (left_vectors,right_vectors,N,M)
+
+    Implicit None
+    Integer, Intent(IN) :: M,N
+    Complex*16, Intent(INOUT) :: left_vectors(N*M,N*M), right_vectors(N*M,N*M)
+    Integer :: ii
+    Double Precision :: Norm
+
+    Do ii=1,N*M
+
+
+       norm=real(sum(left_vectors(ii,:)*conjg(right_vectors(:,ii))))
+
+       
+       if(Real(norm) < 0D0) then
+
+          norm=sqrt(-norm)
+          left_vectors(ii,:)=left_vectors(ii,:)/norm
+          right_vectors(:,ii)=-right_vectors(:,ii)/norm
+
+       else
+
+          norm=sqrt(norm)
+          left_vectors(ii,:)=left_vectors(ii,:)/norm
+          right_vectors(:,ii)=right_vectors(:,ii)/norm
+
+       end if
+
+    end do
+    
+  end Subroutine normalize_left_and_right_eigenvectors
+  
 
 !  Subroutine Fill_isotropic_berreman_matrix(Pij,ng,alpha,dz,k0)
 !
