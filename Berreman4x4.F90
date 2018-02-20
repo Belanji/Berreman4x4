@@ -8,7 +8,7 @@ Program Berreman4x4
   Double Precision, parameter :: theta=0.0D0, ng=1.5D0 
   Double Precision :: lz, alpha=0.0D0
   Double Precision :: eperpa,epara
-  Double Precision :: no=1.52D0, ne=1.78D0
+  Double Precision :: no=1.62D0, ne=1.72D0
   Double Precision :: n_ito
   Double Precision :: lamb, lamb_i,lamb_f,dlamb
   Double Precision :: kx, k0, Xi
@@ -33,14 +33,14 @@ Program Berreman4x4
   
   alpha=alpha*Pi/180.0D0
   
-  lamb_i=0.3D0
-  lamb_f=0.7D0
-  dlamb=0.001D0
+  lamb_i=0.35D0
+  lamb_f=0.65D0
+  dlamb=0.0002D0
 
   
-  p0=0.208D0
+  p0=0.250D0
   Nz=5000
-  lz=50.7D0
+  lz=25.D0
   q0=2*Pi/p0
 
 
@@ -86,10 +86,10 @@ Program Berreman4x4
 
 
   
-  time_DO: Do tt=1,1
+  time_DO: Do tt=1,2001
 
      lamb=lamb_i
-     !call read_next_snapshot(phi,Nz)     
+     call read_next_snapshot(phi,Nz)     
      
      omega_DO : Do while(lamb .le. lamb_f)
 
@@ -118,13 +118,13 @@ Program Berreman4x4
         lc: Do jj=1,Nz
            !Filling Berreman matrix Qij (dont confuse with the Lc order parameter):
            
-           !n(1)=cos(theta)*cos(phi(jj))
-           !n(2)=cos(theta)*sin(phi(jj))
-           !n(3)=sin( theta )
-           
-           n(1)=dcos( q0*dz*(jj-1) )
-           n(2)=dsin( q0*dz*(jj-1) )
+           n(1)=cos(theta)*cos(phi(jj))
+           n(2)=cos(theta)*sin(phi(jj))
            n(3)=0.0D0
+           
+           !n(1)=dcos( q0*dz*(jj-1) )
+           !n(2)=dsin( q0*dz*(jj-1) )
+           !n(3)=0.0D0
            
            eij(1,1)=eperpa+deltaE*n(1)**2
            eij(1,2)=deltaE*n(1)*n(2)
