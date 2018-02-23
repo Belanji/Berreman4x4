@@ -24,26 +24,51 @@ Program Berreman4x4
   Double Precision :: deltaE,dz,dz_ito, dz_polimide
   Double Precision :: transmitance, reflectance, incidence  
   Double Precision, Allocatable :: phi(:)
+  Character (Len=32) :: passed_value
+  Integer :: number_of_passed_arguments
 
 
+  print*, "Welcome to  Berreman4x4 software V0.1 (23/02/18)"
+  number_of_passed_arguments = COMMAND_ARGUMENT_COUNT()
 
+
+  !Check if the user passed the right number of arguments:
+  if ( number_of_passed_arguments < 2) then
+
+     print*, "Error: Wrong number of arguments. You need to pass at least 2 arguments to this software. The remaining ones will be ignored."
+     print*, "Usage: berreman4x4 number_of_lc_layers  cell_length"
+
+       call EXIT(0)
+
+  end if
+  
+
+  !Parsing input line arguments:  
+  call get_command_argument(1,passed_value)
+  read (passed_value,*) lz
+
+  
+  call get_command_argument(2,passed_value)
+  read (passed_value,'(I10)') Nz
+
+
+  !Parse data imput file:
   call parse_input_file(Nz,lz)
   call open_data_file()
-  Allocate( phi(Nz) )
+  
   
   alpha=alpha*Pi/180.0D0
   
   lamb_i=0.35D0
-  lamb_f=0.65D0
-  dlamb=0.0002D0
+  lamb_f=0.75D0
+  dlamb=0.002D0
 
   
   p0=0.250D0
-  Nz=5000
-  lz=25.D0
   q0=2*Pi/p0
 
-
+  
+  Allocate( phi(Nz) )
   !dz_polimide=0.98
   !dz_ito=0.025
   dz=lz/(Nz)
@@ -86,7 +111,7 @@ Program Berreman4x4
 
 
   
-  time_DO: Do tt=1,2001
+  time_DO: Do tt=1,1
 
      lamb=lamb_i
      call read_next_snapshot(phi,Nz)     

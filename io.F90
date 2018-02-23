@@ -88,19 +88,19 @@ Contains
     Double precision ::  first_argument !, second_argument
     Integer :: error_handling
     
-    Open(unit=90, file="data.input",status="old",iostat=error_handling,position="rewind",action="read")
+    !Open(unit=90, file="data.input",status="old",iostat=error_handling,position="rewind",action="read")
 
-    If( error_handling  /= 0)  Stop "Failed to open the data input file (in the open_data_file subroutine)."
+    !If( error_handling  /= 0)  Stop "Failed to open the data input file (in the open_data_file subroutine)."
 
-    read(90,*) character_holder, first_argument
-    Nz=int(first_argument)
+    !read(90,*) character_holder, first_argument
+    !Nz=int(first_argument)
 
     
     !call read_next_word(90,character_holder)
     !read(90,FMT=*,ADVANCE='yes' ) Nz
 
-    read(90,*) character_holder, first_argument
-    lz=first_argument
+    !read(90,*) character_holder, first_argument
+    !lz=first_argument
 
     
     close(90)
