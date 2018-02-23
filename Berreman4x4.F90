@@ -111,7 +111,7 @@ Program Berreman4x4
 
 
   
-  time_DO: Do tt=1,1
+  time_DO: Do tt=1,4001
 
      lamb=lamb_i
      call read_next_snapshot(phi,Nz)     
