@@ -39,37 +39,64 @@ Contains
   end Subroutine open_data_file
 
 
-  Subroutine read_next_snapshot(phi,Nz)
+  function read_next_snapshot(phi,Nz) result(read_status)
 
     Implicit None
     Integer, Intent(in):: Nz
     Double precision   :: phi(:)
     Character(len=40) :: time
     Double Precision :: z
-    Integer :: ii
+    Integer :: ii, read_status
     !p0=0.338
     !lz=5.070
     !q0=2*Pi/p0
     !dz=lz/(Nz-1)
 
     
-    read(50,*) time
-    write(70,*) time
+    read(50,*,Iostat=read_status) time
 
-    Write(*,*) "Reading snapshot for ", time(2:30)
+    read_if: if(read_status == -1 ) then
+
+       print*, "Berreman4x4 sucessfully executed."
+       print*, "Finishing the program."
+
+       
+    else
+   
+
+       write(70,*) time
+       
+       Write(*,*) "Reading snapshot for ", time(2:30)
     
-    Do ii=1,Nz
+       Do ii=1,Nz
 
-       read(50,*)    z , phi(ii)
-       !write(700,*)  z , phi(ii), q0*dz*(ii-1)
+          read(50,*,Iostat=read_status)    z , phi(ii)
 
-    end Do
+          !Check if data was successfully read:
+          if(read_status /= 0 ) then
+
+             Print*, "Failure reading the snapshot. at line", ii
+             Print*, "Aborting the pfrogram."
+             exit
+             
+          end if
+
+
+       end Do
+
+       
+       read(50,*)
+       read(50,*)
+
+       
+    end if read_if
     
-    read(50,*)
-    read(50,*)
-
     
-  end Subroutine read_next_snapshot
+       
+    
+  end function read_next_snapshot
+  
+  
 
   
   Subroutine Close_data_files()

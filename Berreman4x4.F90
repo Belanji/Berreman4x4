@@ -25,10 +25,10 @@ Program Berreman4x4
   Double Precision :: transmitance, reflectance, incidence  
   Double Precision, Allocatable :: phi(:)
   Character (Len=32) :: passed_value
-  Integer :: number_of_passed_arguments
+  Integer :: number_of_passed_arguments, read_status
 
 
-  print*, "Welcome to  Berreman4x4 software V0.1 (23/02/18)"
+  print*, "Welcome to  Berreman4x4 software V0.2 (27/02/18)"
   number_of_passed_arguments = COMMAND_ARGUMENT_COUNT()
 
 
@@ -110,11 +110,12 @@ Program Berreman4x4
   Arij(4,4)=-ng*cos(alpha)
 
 
-  
-  time_DO: Do tt=1,4001
+    
+  read_status=read_next_snapshot(phi,Nz)       
+  time_DO: Do while (read_status == 0) 
 
      lamb=lamb_i
-     call read_next_snapshot(phi,Nz)     
+
      
      omega_DO : Do while(lamb .le. lamb_f)
 
@@ -238,8 +239,11 @@ Program Berreman4x4
 
      write(70,*)
      write(70,*)
-     
+
+     !read the next snapshot and return a integer value
+     read_status=read_next_snapshot(phi,Nz)     
   end Do time_DO
+  
 
 
   call Close_data_files()
