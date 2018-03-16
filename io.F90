@@ -4,13 +4,6 @@ module io
   
   Implicit none
   Character(len=10), Private, Parameter :: input_file_name="data.input"
-  Integer,parameter, private :: environmentLine=2
-  Integer,parameter, private :: soluteLine=10
-  Integer,parameter, private :: solventLine=21
-  Integer,parameter, private :: timeLine=28
-  Integer, parameter, private :: distributionLine=38
-  Integer, parameter, private :: transitionLine=43
-  Integer, parameter, public :: run_number=11
   character(len=8), Parameter, public ::  run_info="run.log"
   Integer, private :: error_handling 
 
@@ -47,16 +40,13 @@ Contains
     Character(len=40) :: time
     Double Precision :: z
     Integer :: ii, read_status
-    !p0=0.338
-    !lz=5.070
-    !q0=2*Pi/p0
-    !dz=lz/(Nz-1)
 
     
     read(50,*,Iostat=read_status) time
 
     read_if: if(read_status == -1 ) then
 
+       print*, "  "
        print*, "Berreman4x4 sucessfully executed."
        print*, "Finishing the program."
 
@@ -106,34 +96,34 @@ Contains
     
   end Subroutine Close_data_files
   
-  Subroutine parse_input_file(Nz,lz)
-
-    Implicit None
-    Integer, Intent(out):: Nz
-    Double precision, Intent(out) ::  lz
-    Character(len=40) :: character_holder
-    Double precision ::  first_argument !, second_argument
-    Integer :: error_handling
-    
-    !Open(unit=90, file="data.input",status="old",iostat=error_handling,position="rewind",action="read")
-
-    !If( error_handling  /= 0)  Stop "Failed to open the data input file (in the open_data_file subroutine)."
-
-    !read(90,*) character_holder, first_argument
-    !Nz=int(first_argument)
-
-    
-    !call read_next_word(90,character_holder)
-    !read(90,FMT=*,ADVANCE='yes' ) Nz
-
-    !read(90,*) character_holder, first_argument
-    !lz=first_argument
-
-    
-    close(90)
-    
-    
-  end Subroutine parse_input_file
+!  Subroutine parse_input_file(Nz,lz)
+!
+!    Implicit None
+!    Integer, Intent(out):: Nz
+!    Double precision, Intent(out) ::  lz
+!    Character(len=40) :: character_holder
+!    Double precision ::  first_argument !, second_argument
+!    Integer :: error_handling
+!    
+!    Open(unit=90, file="data.input",status="old",iostat=error_handling,position="rewind",action="read")
+!
+!    !If( error_handling  /= 0)  Stop "Failed to open the data input file (in the open_data_file subroutine)."
+!
+!    !read(90,*) character_holder, first_argument
+!    !Nz=int(first_argument)
+!
+!    
+!    !call read_next_word(90,character_holder)
+!    !read(90,FMT=*,ADVANCE='yes' ) Nz
+!
+!    !read(90,*) character_holder, first_argument
+!    !lz=first_argument
+!
+!    
+!    close(90)
+!    
+!    
+!  end Subroutine parse_input_file
 
 
   !Subroutine read_next_word(ipFIle, word_holder)

@@ -4,11 +4,11 @@ Program Berreman4x4
 
   Implicit None
   Double Precision, Parameter :: Pi=3.141592653589793D0, eta0=376.98_8
-  Complex*16, Parameter ::  I=(0.0D0,1.0D0)
+  Complex*16, Parameter       :: I=(0.0D0,1.0D0)
   Double Precision, parameter :: theta=0.0D0, ng=1.5D0 
-  Double Precision :: lz, alpha=0.0D0
+  Double Precision ::            lz, alpha=0.0D0
   Double Precision :: eperpa,epara
-  Double Precision :: no=1.62D0, ne=1.72D0
+  Double Precision :: no, ne
   Double Precision :: n_ito
   Double Precision :: lamb, lamb_i,lamb_f,dlamb
   Double Precision :: kx, k0, Xi
@@ -29,38 +29,52 @@ Program Berreman4x4
 
 
   print*, "Welcome to  Berreman4x4 software V0.2 (27/02/18)"
+  print*, " "
+  
   number_of_passed_arguments = COMMAND_ARGUMENT_COUNT()
 
 
   !Check if the user passed the right number of arguments:
-  if ( number_of_passed_arguments < 2) then
+  if ( number_of_passed_arguments < 4) then
 
-     print*, "Error: Wrong number of arguments. You need to pass at least 2 arguments to this software. The remaining ones will be ignored."
-     print*, "Usage: berreman4x4 number_of_lc_layers  cell_length"
+     print*, "Error: Wrong number of arguments. You need to pass at least 4 arguments to this software. The remaining ones will be ignored."
+     print*, "Usage: berreman4x4 cell_length number_of_lc_layers no ne"
 
-       call EXIT(0)
+     call EXIT(0)
 
   end if
   
 
   !Parsing input line arguments:  
+  print*, "Used parameters:"
+
   call get_command_argument(1,passed_value)
   read (passed_value,*) lz
-
+  print*, "lz=", lz
   
   call get_command_argument(2,passed_value)
-  read (passed_value,'(I10)') Nz
+  read (passed_value,'(I7)') Nz
+  print*, "Nz=", Nz
+  
+  call get_command_argument(3,passed_value)
+  read (passed_value,*) no
+  print*, "no=", no
+  
+  call get_command_argument(4,passed_value)
+  read (passed_value,*) ne
+    print*, "ne=", ne
+
 
 
   !Parse data imput file:
-  call parse_input_file(Nz,lz)
+  !call parse_input_file(Nz,lz)
   call open_data_file()
   
   
   alpha=alpha*Pi/180.0D0
   
-  lamb_i=0.35D0
-  lamb_f=0.75D0
+  lamb_i=0.5280D0
+  lamb_f=0.550D0
   dlamb=0.002D0
 
   
@@ -83,7 +97,7 @@ Program Berreman4x4
   epara=ne**2
   deltaE=epara-eperpa
   Xi=dsin(alpha)
-
+  
 
   Iij=(0.0D0,0.0D0)
   forall(ii=1:4)   Iij(ii,ii)=(1.0D0,0.0D0)
@@ -93,7 +107,6 @@ Program Berreman4x4
   psi_i(2,1)=ng*E_i(1)/cos(alpha)
   psi_i(3,1)=E_i(2)
   psi_i(4,1)=ng*cos(alpha)*E_i(2)
-
 
   
 
@@ -110,16 +123,18 @@ Program Berreman4x4
   Arij(4,4)=-ng*cos(alpha)
 
 
-    
-  read_status=read_next_snapshot(phi,Nz)       
+  print*, "  "
+  print*, "Starting calculations:"
+  print*, "  "
+  
+  read_status=read_next_snapshot(phi,Nz)
+  
   time_DO: Do while (read_status == 0) 
 
      lamb=lamb_i
 
      
      omega_DO : Do while(lamb .le. lamb_f)
-
-        Bij=Iij
 
 
         !Initiating electrical parameters:        
@@ -140,12 +155,13 @@ Program Berreman4x4
 
 
         !Initiating the the system input light:
-
+        Bij=Iij
+        
         lc: Do jj=1,Nz
            !Filling Berreman matrix Qij (dont confuse with the Lc order parameter):
            
-           n(1)=cos(theta)*cos(phi(jj))
-           n(2)=cos(theta)*sin(phi(jj))
+           n(1)=dcos(phi(jj))
+           n(2)=dsin(phi(jj))
            n(3)=0.0D0
            
            !n(1)=dcos( q0*dz*(jj-1) )
@@ -162,12 +178,12 @@ Program Berreman4x4
            
            eij(3,1)=eij(1,3)
            eij(3,2)=eij(2,3)
-           eij(3,3)=eperpa+deltaE*n(3)**2
+           eij(3,3)=eperpa +deltaE*n(3)**2
 
 
            
            Qij(1,1)= -Xi*eij(3,1)/eij(3,3)
-           Qij(1,2)=  -Xi**2/eij(3,3)+1D0           
+           Qij(1,2)= -Xi**2/eij(3,3)+1D0           
            Qij(1,3)= -Xi*eij(3,2)/eij(3,3) 
            Qij(1,4)= (0.0D0,0.0D0 )
 
@@ -186,33 +202,44 @@ Program Berreman4x4
            Qij(4,3)=-Xi**2-eij(2,3)*eij(3,2)/eij(3,3)+eij(2,2)
            Qij(4,4)=(0.0D0,0.0D0)
 
-           !Calculating the Berraman matrix eigenvalues and eigenvectors:           
-           
+           !Calculating the Berraman matrix eigenvalues and eigenvectors:                    
            call zgeev('V','V',4,Qij,4,q_i,VL,4,VR,4,WORk,LWORK,RWORK,INFO)
            if( INFO .ne. 0) then
            
            
               print*,  "convergence failure at Nz=", Nz,"info=",INFO, "lamb=",lamb 
-              stop
+              EXIT
            
            end if
-           
+
+           INFO=Check_for_degenerate_eigenvalues( q_i, 0.00001D0)
+           if(INFO > 0) print*,  "Degenarate eigenvalue at Nz=", Nz,"info=",INFO, "lamb=",lamb
+
            Vl=transpose(Vl)
            
            call normalize_left_and_right_eigenvectors(Vl,VR,4,1)
 
            q_diag_matrix=(0D0,0D0)
-           forall(kk=1:4) q_diag_matrix(kk,kk)=zexp(-dz*k0*q_i(kk)*I)
+           forall(kk=1:4) q_diag_matrix(kk,kk)=cos(dz*k0*q_i(kk))-I*sin(dz*k0*q_i(kk))
            
            
               
-           Pij=matmul( VR , matmul(q_diag_matrix,Vl) )
+           Pij=matmul( matmul(VR,q_diag_matrix) , matmul(Vl,Bij)  )
 
           
-
+           Bij=Pij
            
-           Bij=matmul(Pij,Bij)
+           
 
+           !Pij=matmul( Pij , transpose(conjg(Pij)) )
+           !Print*, Bij(1,1), Bij(1,2)
+           !Print*, Bij(1,3), Bij(1,4)
+           !Print*, Bij(2,1), Bij(2,2)
+           !Print*, Bij(2,3), Bij(2,4)
+           !Print*, Bij(3,1), Bij(3,2)
+           !Print*, Bij(3,3), Bij(3,4)
+           !Print*, Pij(1,1), Pij(1,2)
+           !Print*, Pij(4,3), Pij(4,4)
            
         end Do lc
 
@@ -227,7 +254,7 @@ Program Berreman4x4
         if( INFO .ne. 0) print*, "info=",INFO, "lamb=" ,lamb , "deu ruim (berreman vector)!!!"
         
         transmitance=Real( psi_tr(1,1)*conjg(psi_tr(1,1))/(cos(alpha)**2)+psi_tr(2,1)*conjg(psi_tr(2,1)) )/incidence
-        reflectance=Real( psi_tr(3,1)*conjg(psi_tr(3,1))/(cos(alpha)**2)+psi_tr(4,1)*conjg(psi_tr(4,1)) )/incidence
+        reflectance =Real( psi_tr(3,1)*conjg(psi_tr(3,1))/(cos(alpha)**2)+psi_tr(4,1)*conjg(psi_tr(4,1)) )/incidence
 
 
         write(70,*) lamb, (transmitance), (reflectance), (transmitance)+(reflectance)
@@ -240,7 +267,7 @@ Program Berreman4x4
      write(70,*)
      write(70,*)
 
-     !read the next snapshot and return a integer value
+
      read_status=read_next_snapshot(phi,Nz)     
   end Do time_DO
   
@@ -262,8 +289,9 @@ contains
     Do ii=1,N*M
 
 
-       norm=real(sum(left_vectors(ii,:)*conjg(right_vectors(:,ii))))
+       norm=real(sum(conjg(left_vectors(ii,:))*(right_vectors(:,ii))))
 
+       
        
        if(Real(norm) < 0D0) then
 
@@ -271,6 +299,9 @@ contains
           left_vectors(ii,:)=left_vectors(ii,:)/norm
           right_vectors(:,ii)=-right_vectors(:,ii)/norm
 
+
+
+          
        else
 
           norm=sqrt(norm)
@@ -283,7 +314,26 @@ contains
     
   end Subroutine normalize_left_and_right_eigenvectors
   
+  Function Check_for_degenerate_eigenvalues( q_i, check_precision ) result(number_eigenval_degenerate)
 
+    Complex*16, dimension(4), Intent(in) :: q_i
+    Double Precision, Intent(in) :: check_precision
+    integer :: number_eigenval_degenerate
+    integer :: ii, jj
+
+    number_eigenval_degenerate=0
+    Do ii=1,4
+       Do jj=ii+1,4
+
+          if(abs(q_i(ii)-q_i(jj) ) < check_precision )  number_eigenval_degenerate=number_eigenval_degenerate+1
+
+          
+       end Do
+    end Do
+    
+  end Function Check_for_degenerate_eigenvalues
+  
+          
 !  Subroutine Fill_isotropic_berreman_matrix(Pij,ng,alpha,dz,k0)
 !
 !    Implicit None
