@@ -4,6 +4,9 @@ rm berreman4x4
 
 gfortran -O3 -ffree-form -ffree-line-length-none -llapack io.F90 Berreman4x4.F90  -o berreman4x4
 
+#ifort -static -fast -mkl io.F90 Berreman4x4.F90  -o berreman4x4
+
+
 #pgfortran -O0  io.F90 Berreman4x4.F90 -lblas -llapack -o berreman4x4
 
 #gfortran -static -ffree-form -ffree-line-length-none -O3 -llapack io.F90 Berreman4x4.F90 -o berreman4x4

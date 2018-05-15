@@ -73,9 +73,9 @@ Program Berreman4x4
   
   alpha=alpha*Pi/180.0D0
   
-  lamb_i=0.5280D0
-  lamb_f=0.550D0
-  dlamb=0.002D0
+  lamb_i=0.350D0
+  lamb_f=0.750D0
+  dlamb=0.0002D0
 
   
   p0=0.250D0
